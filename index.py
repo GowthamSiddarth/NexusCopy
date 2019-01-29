@@ -1,4 +1,26 @@
-import logging, argparse, re
+import logging, argparse, re, requests
+
+
+def get_repository_format(host, repository_name):
+    logger.info("Started executing get_repository_type()")
+
+    get_repositories_api = host + '/service/rest/beta/repositories'
+    try:
+        response = requests.get(get_repositories_api)
+        response.raise_for_status()
+
+        repositories = response.json()
+        for repository in repositories:
+            logger.debug("Repository: " + str(repository))
+            if repository['name'] == repository_name:
+                logger.debug("Repository Name match found")
+                return repository['format']
+
+        logger.warning("No repository found with given name: " + str(repository_name))
+    except requests.exceptions.RequestException as e:
+        logger.error("Exception occurred: " + str(e))
+
+    return None
 
 
 def validate_args(args):
@@ -46,6 +68,9 @@ def main():
     if not args_valid:
         logger.error("Arguments passed are not valid. Use -h for help")
         return
+
+    source_repo_format = get_repository_format(args['host'], args['source_repo'])
+    destination_repo_format = get_repository_format(args['host'], args['destination_repo'])
 
     logger.info("Main function execution finished.")
 
