@@ -10,11 +10,15 @@ def download_assets_from_components(source_repo, components):
 
         try:
             for asset in attributes['assets']:
-                response = requests.get(asset['downloadUrl'], stream=True)
-                response.raise_for_status()
-
                 filename = asset['downloadUrl'][asset['downloadUrl'].rfind('/') + 1:]
                 logger.debug("filename = " + os.path.join(source_repo, component, filename))
+
+                if filename.endswith('sha1') or filename.endswith('md5'):
+                    logger.info("skipping download of {}".format(filename))
+                    continue
+
+                response = requests.get(asset['downloadUrl'], stream=True)
+                response.raise_for_status()
 
                 asset_file = open(os.path.join(source_repo, component, filename), 'wb')
                 asset_file.write(response.content)
