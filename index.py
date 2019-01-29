@@ -34,7 +34,7 @@ def get_components_with_version(host, repository_name, component_name, version):
 
             get_components_api = host + '/service/rest/beta/components?repository=' + repository_name + '&continuationToken=' + continuation_token
 
-        components = (list(itertools.chain(*components)), component_name, version)
+        components = group_by_components_with_version(list(itertools.chain(*components)), component_name, version)
         logger.info("%d components found in repo %s for %s" % (len(components), repository_name, component_name))
 
         return components
@@ -124,6 +124,10 @@ def main():
 
     logger.debug("Source Repo {} format: {}".format(args['source_repo'], source_repo_format))
     logger.debug("Destination Repo {} format: {}".format(args['destination_repo'], destination_repo_format))
+
+    components = get_components_with_version(args['host'], args['source_repo'], args['component'],
+                                             args['component_version'])
+    logger.debug(components)
 
     logger.info("Main function execution finished.")
 
