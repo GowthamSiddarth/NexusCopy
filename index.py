@@ -1,6 +1,11 @@
 import logging
 
 
+def main():
+    logger.info("Started executing main function")
+    logger.info("Main function execution finished.")
+
+
 def init_logger():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -19,4 +24,5 @@ def init_logger():
 if __name__ == '__main__':
     logger = init_logger()
     logger.info("Logger Initialized...Calling main function")
+    main()
     logger.info("Returned from main execution. Ending Program!")
