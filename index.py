@@ -1,4 +1,26 @@
-import logging, argparse, re, requests, itertools
+import logging, argparse, re, requests, itertools, os
+
+
+def download_assets_from_components(source_repo, components):
+    for component, attributes in components.items():
+        try:
+            os.makedirs(os.path.join(source_repo, component))
+        except OSError as os_error:
+            logger.info("Exception caught " + str(os_error))
+
+        try:
+            for asset in attributes['assets']:
+                response = requests.get(asset['downloadUrl'], stream=True)
+                response.raise_for_status()
+
+                filename = asset['downloadUrl'][asset['downloadUrl'].rfind('/') + 1:]
+                logger.debug("filename = " + os.path.join(source_repo, component, filename))
+
+                asset_file = open(os.path.join(source_repo, component, filename), 'wb')
+                asset_file.write(response.content)
+        except requests.exceptions.RequestException as e:
+            logger.error("Exception occurred: " + str(e))
+            return None
 
 
 def group_by_components_with_version(components, component_name, version):
@@ -127,6 +149,8 @@ def main():
     components = get_components_with_version(args['host'], args['source_repo'], args['component'],
                                              args['component_version'])
     logger.debug(components)
+
+    download_assets_from_components(args['source_repo'], components)
 
     logger.info("Main function execution finished.")
 
