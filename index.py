@@ -17,6 +17,32 @@ def group_by_components_with_version(components, component_name, version):
     return components_group
 
 
+def get_components_with_version(host, repository_name, component_name, version):
+    logger.info("Started executing get_components()")
+
+    get_components_api, components = host + '/service/rest/beta/components?repository=' + repository_name, []
+    try:
+        while True:
+            response = requests.get(get_components_api)
+            response.raise_for_status()
+
+            data = response.json()
+            components.append(data['items'])
+            continuation_token = data['continuationToken']
+            if continuation_token is None:
+                break
+
+            get_components_api = host + '/service/rest/beta/components?repository=' + repository_name + '&continuationToken=' + continuation_token
+
+        components = (list(itertools.chain(*components)), component_name, version)
+        logger.info("%d components found in repo %s for %s" % (len(components), repository_name, component_name))
+
+        return components
+    except requests.exceptions.RequestException as e:
+        logger.error("Exception occurred: " + str(e))
+        return None
+
+
 def valid_repository_formats(source_repo_format, destination_repo_format):
     return None != source_repo_format and None != destination_repo_format \
            and source_repo_format == destination_repo_format
