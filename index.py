@@ -1,6 +1,11 @@
 import logging, argparse, re, requests
 
 
+def valid_repository_formats(source_repo_format, destination_repo_format):
+    return None != source_repo_format and None != destination_repo_format \
+           and source_repo_format == destination_repo_format
+
+
 def get_repository_format(host, repository_name):
     logger.info("Started executing get_repository_type()")
 
@@ -71,6 +76,12 @@ def main():
 
     source_repo_format = get_repository_format(args['host'], args['source_repo'])
     destination_repo_format = get_repository_format(args['host'], args['destination_repo'])
+    if not valid_repository_formats(source_repo_format, destination_repo_format):
+        logger.info("Repository Format is not Valid. Returning execution from here!")
+        return
+
+    logger.debug("Source Repo {} format: {}".format(args['source_repo'], source_repo_format))
+    logger.debug("Destination Repo {} format: {}".format(args['destination_repo'], destination_repo_format))
 
     logger.info("Main function execution finished.")
 
