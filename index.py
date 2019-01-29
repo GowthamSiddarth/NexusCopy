@@ -14,3 +14,9 @@ def init_logger():
     logger.addHandler(console_handler)
 
     return logger
+
+
+if __name__ == '__main__':
+    logger = init_logger()
+    logger.info("Logger Initialized...Calling main function")
+    logger.info("Returned from main execution. Ending Program!")
