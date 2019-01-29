@@ -26,6 +26,8 @@ def parse_args():
     parser.add_argument('-c', '--component', help="Name of the component which has to be copied/moved")
     parser.add_argument('--component-version', help="Version of the component which has to be copied/moved",
                         required=True)
+    parser.add_argument('-d', '--destination-repo', help="Repository to which artifact should be copied/moved",
+                        default='ArtifactsBackup')
     parser.add_argument('--host', help="Host address of nexus repository", default="http://192.168.113.192:15921")
     parser.add_argument('-u', '--username', help="Username of the nexus repository admin", default="admin")
     parser.add_argument('-p', '--password', help="Password of the nexus repository admin", default="admin123")
