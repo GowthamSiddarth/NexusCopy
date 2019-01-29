@@ -1,4 +1,20 @@
-import logging, argparse, re, requests
+import logging, argparse, re, requests, itertools
+
+
+def group_by_components_with_version(components, component_name, version):
+    logger.info("Started executing group_by_components()")
+
+    components_group = {}
+    for component in components:
+        if (component_name is None or component_name == component['name']) and version == component['version']:
+            components_group[component['name']] = components_group.get(component['name'], []) + \
+                                                  [{'id': component['id'],
+                                                    'version': component['version'],
+                                                    'assets': component['assets']}]
+
+    logger.debug("Components Group:" + str(components_group))
+    logger.info("Finished executing group_by_components")
+    return components_group
 
 
 def valid_repository_formats(source_repo_format, destination_repo_format):
