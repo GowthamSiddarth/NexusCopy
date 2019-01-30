@@ -1,6 +1,10 @@
 import logging, argparse, re, requests, itertools, os
 
 
+def upload_components(desination_repo, components):
+    pass
+
+
 def download_assets_from_components(source_repo, components):
     for component, attributes in components.items():
         try:
@@ -22,9 +26,11 @@ def download_assets_from_components(source_repo, components):
 
                 asset_file = open(os.path.join(source_repo, component, filename), 'wb')
                 asset_file.write(response.content)
+
+                return True
         except requests.exceptions.RequestException as e:
             logger.error("Exception occurred: " + str(e))
-            return None
+            return False
 
 
 def group_by_components_with_version(components, component_name, version):
@@ -156,7 +162,13 @@ def main():
                                              args['component_version'])
     logger.debug(components)
 
-    download_assets_from_components(args['source_repo'], components)
+    downloaded = download_assets_from_components(args['source_repo'], components)
+    if not downloaded:
+        logger.info("components download from source repository {} failed".format(args['source_repo']))
+        return
+    else:
+        logger.info("Uploading all the downloaded components to destination repository {}".format(args['destination_repo']))
+        upload_components(args['destination_repo'], components)
 
     logger.info("Main function execution finished.")
 
