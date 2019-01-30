@@ -20,6 +20,9 @@ def get_groupid_and_artifactid(pom_url):
     return group_id, artifact_id
 
 
+def get_pom_and_artifact(assets):
+    return (assets[0], assets[1]) if assets[0]['path'].endswith('pom') else (assets[1], assets[0])
+
 
 def download_assets_from_components(source_repo, components):
     for component, attributes in components.items():
