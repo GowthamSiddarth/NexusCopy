@@ -35,7 +35,9 @@ def group_by_components_with_version(components, component_name, version):
         if (component_name is None or component_name == component['name']) and version == component['version']:
             components_group[component['name']] = {'id': component['id'],
                                                    'version': component['version'],
-                                                   'assets': component['assets']}
+                                                   'assets': [asset for asset in component['assets']
+                                                                if not asset['path'].endswith('sha1') and
+                                                                    not asset['path'].endswith('md5')]}
 
     logger.debug("Components Group:" + str(components_group))
     logger.info("Finished executing group_by_components")
