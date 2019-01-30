@@ -1,8 +1,24 @@
 import logging, argparse, re, requests, itertools, os
+from xml.etree import ElementTree
 
 
-def upload_components(desination_repo, components):
-    pass
+def get_groupid_and_artifactid(pom_url):
+    group_id, artifact_id = None, None
+    try:
+        response = requests.get(pom_url)
+        response.raise_for_status()
+
+        root = ElementTree.fromstring(response.content)
+        for child in root.getchildren():
+            if 'groupId' in child.tag:
+                group_id = child.text
+            if 'artifactId' in child.tag:
+                artifact_id = child.text
+    except requests.exceptions.RequestException as e:
+        logger.error("Exception occurred: " + str(e))
+
+    return group_id, artifact_id
+
 
 
 def download_assets_from_components(source_repo, components):
@@ -17,7 +33,7 @@ def download_assets_from_components(source_repo, components):
                 filename = asset['downloadUrl'][asset['downloadUrl'].rfind('/') + 1:]
                 logger.debug("filename = " + os.path.join(source_repo, component, filename))
 
-                if filename.endswith('sha1') or filename.endswith('md5'):
+                if filename.endswith('pom') or filename.endswith('sha1') or filename.endswith('md5'):
                     logger.info("skipping download of {}".format(filename))
                     continue
 
@@ -26,11 +42,11 @@ def download_assets_from_components(source_repo, components):
 
                 asset_file = open(os.path.join(source_repo, component, filename), 'wb')
                 asset_file.write(response.content)
-
-                return True
         except requests.exceptions.RequestException as e:
             logger.error("Exception occurred: " + str(e))
             return False
+
+    return True
 
 
 def group_by_components_with_version(components, component_name, version):
@@ -42,8 +58,8 @@ def group_by_components_with_version(components, component_name, version):
             components_group[component['name']] = {'id': component['id'],
                                                    'version': component['version'],
                                                    'assets': [asset for asset in component['assets']
-                                                                if not asset['path'].endswith('sha1') and
-                                                                    not asset['path'].endswith('md5')]}
+                                                              if not asset['path'].endswith('sha1') and
+                                                              not asset['path'].endswith('md5')]}
 
     logger.debug("Components Group:" + str(components_group))
     logger.info("Finished executing group_by_components")
@@ -167,8 +183,9 @@ def main():
         logger.info("components download from source repository {} failed".format(args['source_repo']))
         return
     else:
-        logger.info("Uploading all the downloaded components to destination repository {}".format(args['destination_repo']))
-        upload_components(args['destination_repo'], components)
+        logger.info(
+            "Uploading all the downloaded components to destination repository {}".format(args['destination_repo']))
+        upload_components(args['destination_repo'], components, args['source_repo'], args['component_version'])
 
     logger.info("Main function execution finished.")
 
