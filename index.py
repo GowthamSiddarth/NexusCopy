@@ -24,6 +24,19 @@ def get_pom_and_artifact(assets):
     return (assets[0], assets[1]) if assets[0]['path'].endswith('pom') else (assets[1], assets[0])
 
 
+def upload_components(desination_repo, components, source_repo, component_version):
+    for component, attributes in components.items():
+        pom, artifact = get_pom_and_artifact(attributes['assets'])
+        group_id, artifact_id = get_groupid_and_artifactid(pom['downloadUrl'])
+
+        downloads_directory = os.path.join(source_repo, component)
+        artifact_path = os.path.join(downloads_directory, artifact['path'][artifact['path'].rfind('/') + 1:])
+        logger.info("groupid = " + str(group_id))
+        logger.info("artifact_id = " + str(artifact_id))
+        logger.info("artifact_path = " + str(artifact_path))
+        logger.info("component_version = " + str(component_version))
+
+
 def download_assets_from_components(source_repo, components):
     for component, attributes in components.items():
         try:
