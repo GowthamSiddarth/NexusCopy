@@ -1,5 +1,6 @@
 import logging, argparse, re, requests, itertools, os
 from xml.etree import ElementTree
+from urllib.parse import urlparse
 
 
 def get_groupid_and_artifactid(pom_url):
@@ -24,17 +25,34 @@ def get_pom_and_artifact(assets):
     return (assets[0], assets[1]) if assets[0]['path'].endswith('pom') else (assets[1], assets[0])
 
 
-def upload_components(desination_repo, components, source_repo, component_version):
+def upload_components(desination_repo, components, source_repo, component_version, host, username, password):
     for component, attributes in components.items():
         pom, artifact = get_pom_and_artifact(attributes['assets'])
         group_id, artifact_id = get_groupid_and_artifactid(pom['downloadUrl'])
 
         downloads_directory = os.path.join(source_repo, component)
         artifact_path = os.path.join(downloads_directory, artifact['path'][artifact['path'].rfind('/') + 1:])
-        logger.info("groupid = " + str(group_id))
-        logger.info("artifact_id = " + str(artifact_id))
-        logger.info("artifact_path = " + str(artifact_path))
-        logger.info("component_version = " + str(component_version))
+        artifact_extension = os.path.splitext(artifact_path)[1]
+
+        parsed_url = urlparse(url=host)
+        upload_components_api = parsed_url.scheme + '://' + username + ':' + password + '@' + parsed_url.netloc + '/service/rest/beta/components?repository=' + desination_repo
+        logger.debug('upload_components_api = ' + upload_components_api)
+        files = {'maven2.asset1': open(artifact_path, 'rb')}
+        payload = {
+            'maven2.groupId': group_id,
+            'maven2.artifactId': artifact_id,
+            'maven2.version': component_version,
+            'maven2.asset1.extension': artifact_extension
+        }
+
+        try:
+            response = requests.post(upload_components_api, files=files, data=payload)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error("Exception occurred: " + str(e))
+            return False
+
+    return True
 
 
 def download_assets_from_components(source_repo, components):
@@ -201,7 +219,8 @@ def main():
     else:
         logger.info(
             "Uploading all the downloaded components to destination repository {}".format(args['destination_repo']))
-        upload_components(args['destination_repo'], components, args['source_repo'], args['component_version'])
+        upload_components(args['destination_repo'], components, args['source_repo'], args['component_version'],
+                          args['host'], args['username'], args['password'])
 
     logger.info("Main function execution finished.")
 
