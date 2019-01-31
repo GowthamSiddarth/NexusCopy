@@ -10,11 +10,12 @@ def get_groupid_and_artifactid(pom_url):
         response.raise_for_status()
 
         root = ElementTree.fromstring(response.content)
-        for child in root.getchildren():
-            if 'groupId' in child.tag:
-                group_id = child.text
-            if 'artifactId' in child.tag:
-                artifact_id = child.text
+        xml_namespace = root.tag[root.tag.find('{'):root.tag.find('}') + 1]
+
+        artifact_id = root.findtext(xml_namespace + 'artifactId')
+        group_id = root.findtext(xml_namespace + 'artifactId')
+        if 0 == len(group_id):
+            group_id = root.find(xml_namespace + 'parent').findtext(xml_namespace + 'groupId')
     except requests.exceptions.RequestException as e:
         logger.error("Exception occurred: " + str(e))
 
