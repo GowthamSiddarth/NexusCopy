@@ -1,59 +1,19 @@
 import logging, argparse, re, requests, itertools, os
-from xml.etree import ElementTree
 from urllib.parse import urlparse
 
 
-def get_groupid_and_artifactid(pom_url):
-    group_id, artifact_id = None, None
-    try:
-        response = requests.get(pom_url)
-        response.raise_for_status()
-
-        root = ElementTree.fromstring(response.content)
-        xml_namespace = root.tag[root.tag.find('{'):root.tag.find('}') + 1]
-
-        artifact_id = root.findtext(xml_namespace + 'artifactId')
-        group_id = root.findtext(xml_namespace + 'artifactId')
-        if 0 == len(group_id):
-            group_id = root.find(xml_namespace + 'parent').findtext(xml_namespace + 'groupId')
-    except requests.exceptions.RequestException as e:
-        logger.error("Exception occurred: " + str(e))
-
-    return group_id, artifact_id
-
-
-def get_pom_and_artifact(assets):
-    return (assets[0], assets[1]) if assets[0]['path'].endswith('pom') else (assets[1], assets[0])
-
-
-def upload_components(desination_repo, components, source_repo, component_version, host, username, password):
-    for component, attributes in components.items():
-        pom, artifact = get_pom_and_artifact(attributes['assets'])
-        group_id, artifact_id = get_groupid_and_artifactid(pom['downloadUrl'])
-
+def get_files_and_payload(assets, source_repo, component):
+    files, payload, idx = {}, {}, 1
+    for asset in assets:
         downloads_directory = os.path.join(source_repo, component)
-        artifact_path = os.path.join(downloads_directory, artifact['path'][artifact['path'].rfind('/') + 1:])
-        artifact_extension = os.path.splitext(artifact_path)[1]
+        asset_path = os.path.join(downloads_directory, asset['path'][asset['path'].rfind('/') + 1:])
+        asset_extension = os.path.splitext(asset_path)[1]
 
-        parsed_url = urlparse(url=host)
-        upload_components_api = parsed_url.scheme + '://' + username + ':' + password + '@' + parsed_url.netloc + '/service/rest/beta/components?repository=' + desination_repo
-        logger.debug('upload_components_api = ' + upload_components_api)
-        files = {'maven2.asset1': open(artifact_path, 'rb')}
-        payload = {
-            'maven2.groupId': group_id,
-            'maven2.artifactId': artifact_id,
-            'maven2.version': component_version,
-            'maven2.asset1.extension': artifact_extension
-        }
+        files['maven2.asset' + str(idx)] = open(asset_path, 'rb')
+        payload['maven2.asset' + str(idx) + '.extension'] = asset_extension[1:]
+        idx = idx + 1
 
-        try:
-            response = requests.post(upload_components_api, files=files, data=payload)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("Exception occurred: " + str(e))
-            return False
-
-    return True
+    return files, payload
 
 
 def download_assets_from_components(source_repo, components):
@@ -68,7 +28,7 @@ def download_assets_from_components(source_repo, components):
                 filename = asset['downloadUrl'][asset['downloadUrl'].rfind('/') + 1:]
                 logger.debug("filename = " + os.path.join(source_repo, component, filename))
 
-                if filename.endswith('pom') or filename.endswith('sha1') or filename.endswith('md5'):
+                if filename.endswith('sha1') or filename.endswith('md5'):
                     logger.info("skipping download of {}".format(filename))
                     continue
 
@@ -220,8 +180,8 @@ def main():
     else:
         logger.info(
             "Uploading all the downloaded components to destination repository {}".format(args['destination_repo']))
-        upload_components(args['destination_repo'], components, args['source_repo'], args['component_version'],
-                          args['host'], args['username'], args['password'])
+        upload_components(args['destination_repo'], components, args['source_repo'], args['host'], args['username'],
+                          args['password'])
 
     logger.info("Main function execution finished.")
 
