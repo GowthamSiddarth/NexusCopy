@@ -16,6 +16,27 @@ def get_files_and_payload(assets, source_repo, component):
     return files, payload
 
 
+def upload_components(destination_repo, components, source_repo, host, username, password):
+    for component, attributes in components.items():
+        try:
+            parsed_url = urlparse(url=host)
+            upload_components_api = parsed_url.scheme + '://' + username + ':' + password + '@' + parsed_url.netloc + '/service/rest/beta/components?repository=' + destination_repo
+
+            files, payload = get_files_and_payload(attributes['assets'], source_repo, component)
+            logger.debug("files = " + str(files))
+            logger.debug("payload = " + str(payload))
+
+            response = requests.post(upload_components_api, files=files, data=payload)
+            response.raise_for_status()
+
+            logger.info("component {} uploaded successfully".format(component))
+        except requests.exceptions.RequestException as e:
+            logger.error("Exception occurred: " + str(e))
+            return False
+
+    return True
+
+
 def download_assets_from_components(source_repo, components):
     for component, attributes in components.items():
         try:
